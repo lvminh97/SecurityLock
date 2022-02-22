@@ -28,8 +28,7 @@ void setup() {
   pinMode(CFG_BTN, INPUT_PULLUP);
   //
   WiFi.mode(WIFI_AP_STA);
-  WiFi.softAP(ESPSSID, ESPPASS);
-  WiFi.begin("Minh BKA - 2.4G", "khongcopass");  
+  WiFi.softAP(ESPSSID, ESPPASS); 
   //
   server.on("/", getIndex);
   server.on("/save_config", saveConfig);
