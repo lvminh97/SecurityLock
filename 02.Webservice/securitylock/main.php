@@ -33,6 +33,10 @@
         setParam("status", "1");
         setParam("latest_status", date("Y-m-d H:i:s"));
     }
+    else if(isset($decoded_data['cmd']) && $decoded_data['cmd'] == "close"){
+        setParam("status", "0");
+        setParam("latest_status", date("Y-m-d H:i:s"));
+    }
     $plain = str2ByteArray(json_encode($resp));
     $blocks = intdiv(count($plain) , 16);
     if(count($plain) % 16 != 0)
