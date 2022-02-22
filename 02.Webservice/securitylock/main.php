@@ -3,7 +3,6 @@
     require_once "function.php";
     require_once "aes.php";
 
-
     $cipher = "";
     if(isset($_POST['data'])){
         $cipher = base64_decode($_POST['data']);

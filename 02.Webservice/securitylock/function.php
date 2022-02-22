@@ -1,6 +1,6 @@
 <?php 
 
-require_once "DB.php";
+require_once "db.php";
 
 function setTimeZone(){
     date_default_timezone_set('asia/ho_chi_minh');
