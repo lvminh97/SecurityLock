@@ -22,7 +22,7 @@ byte prev_mode, cur_mode;
 bool lcd_update;
 bool prev_status, cur_status;
 
-unsigned long lock_code_time, otp_code_time;
+unsigned long lock_code_time, otp_code_time, status_update_time;
 char lock_code[9], otp_code[7], right_otp[7];
 byte lock_code_cnt, otp_code_cnt;
 byte wrong_code_cnt;
@@ -33,9 +33,9 @@ int buffCnt;
 
 void setup() {
   delay(2000);
-  Serial.begin(9600);
-  Serial1.begin(9600);
-  Serial2.begin(9600);
+  Serial.begin(9600);  // For debugging
+  Serial1.begin(9600); // UART1 connected to GSM module
+  Serial2.begin(9600); // UART2 connected to ESP8266
   GPIO_Init();
   GSM_Init();
   lcd.begin();
@@ -124,19 +124,29 @@ void CheckStatus(){
     if(cur_status == true){
       lcd.clear();
       lcd.print("Mo cua");
-      Serial2.println("GHmF9JHsY9idJ6peiC71nQ==");
       servo.write(90);
+      Serial2.println("GHmF9JHsY9idJ6peiC71nQ=="); // encrypted text of open status
+      status_update_time = millis();
     }
     else{
       lcd.clear();
       lcd.print("Dong cua");
       lcd_update = true;
       servo.write(0);
+      Serial2.println("yFlLLYHM8+Eyqmg0rguZpw=="); // encrypted text of close status 
+      status_update_time = millis();
     }
     prev_status = cur_status;
   }
   if(digitalRead(CLOSE) == LOW && cur_status == true){
     cur_status = false;
+  }
+  if(millis() - status_update_time >= 10000){
+    if(cur_status == true)
+      Serial2.println("GHmF9JHsY9idJ6peiC71nQ==");
+    else
+      Serial2.println("yFlLLYHM8+Eyqmg0rguZpw==");
+    status_update_time = millis();
   }
 }
 
@@ -185,13 +195,11 @@ void EnterCode(int mode, char key) {
   }
   else if (key == '#') {
     if (cur_mode == 0 && check_lock_code == false && lock_code[0] != 0) {
-      // create encryption
+      // create encrypted text to send lock code to server
       sprintf(plaintext, "{\"cmd\":\"lock_code\",\"code\":\"%s\"}", lock_code);
-//      Serial.println(plaintext);
       AES_Encrypt(plaintext, strlen(plaintext), ciphertext, (char*) iv);
       base64_encode(base64_text, ciphertext, strlen(ciphertext));
       Serial2.println(base64_text);
-//      Serial.println(base64_text);
       //
       lcd.setCursor(0, 1);
       lcd.print("Verifying...   ");
@@ -237,6 +245,7 @@ void CheckESPSerial() {
 }
 
 void ProcessBuffer() {
+  // decrypt the response from server to check lock code and get otp code if lock code is right
   base64_decode(ciphertext, buffers, strlen(buffers));
   AES_Decrypt(ciphertext, strlen(ciphertext), plaintext, (char*) iv);
   StaticJsonDocument<100> doc;
